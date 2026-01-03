@@ -1,2 +1,8 @@
 fastapi
 uvicorn
+jinja2
+josepython-jose
+pymongo
+pydantic[email]
+python-multipart
+passlib[bcrypt]
