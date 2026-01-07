@@ -27,6 +27,13 @@ UPLOAD_DIR = "uploads"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 # =======================
+# Gemini Setup
+# =======================
+import google.generativeai as genai
+genai.configure(api_key="YOUR_GEMINI_API_KEY")
+model = genai.GenerativeModel("gemini-1.5-flash")
+
+# =======================
 # APP
 # =======================
 app = FastAPI()
@@ -128,13 +135,13 @@ def get_current_user(request: Request) -> str:
 
 # =======================
 # PDF PARSER
-# =======================
-def parse_pdf(path: str) -> str:
-    doc = fitz.open(path)
-    text = ""
-    for page in doc:
-        text += page.get_text()
-    return text
+# # =======================
+# def parse_pdf(path: str) -> str:
+#     doc = fitz.open(path)
+#     text = ""
+#     for page in doc:
+#         text += page.get_text()
+#     return text
 
 # =======================
 # ROUTES
@@ -310,25 +317,65 @@ def logout(response: Response):
     return {"msg": "Logged out"}
 
 # ---------- UPLOAD RESUME ----------
+
+def parse_file(file_path: str) -> str:
+    if file_path.endswith(".pdf"):
+        return extract_text_from_pdf(file_path)
+    elif file_path.endswith(".docx") or file_path.endswith(".doc"):
+        return extract_text_from_doc(file_path)
+    else:
+        raise ValueError("Unsupported file format")
+
+    """
+    Send raw resume text to Gemini and get structured JSON back.
+    """
+    genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
+
+    model = genai.GenerativeModel("gemini-1.5-flash")
+    prompt = f"""
+    Convert the following resume text into a structured JSON format with fields:
+    full_name, email, phone, location, linkedin, github, portfolio, summary,
+    skills (programming_languages, frameworks, databases, tools),
+    education (degree, institution, start_date, end_date, cgpa),
+    experience (title, company, start_date, end_date, responsibilities),
+    projects (name, description, technologies, link),
+    certifications (name, issuer, date).
+
+    Resume text:
+    {raw_text}
+    """
+
+    response = model.generate_content(prompt)
+    return response.text  # Gemini returns JSON string → parse if needed
+
+
 @app.post("/upload_resume")
 async def upload_resume(
     file: UploadFile = File(...),
-    email: str = Depends(get_current_user)
+    user: str = Depends(get_current_user)  # email comes from validated token
 ):
     file_id = str(uuid.uuid4())
-    file_path = f"{UPLOAD_DIR}/{file_id}.pdf"
+    ext = os.path.splitext(file.filename)[-1].lower()
+    file_path = f"{UPLOAD_DIR}/{file_id}{ext}"
 
+    # Save file locally
     with open(file_path, "wb") as f:
         f.write(await file.read())
 
-    resume_text = parse_pdf(file_path)
-    # use llm to change the parase text , 
+    # Extract raw text (PDF/DOC parser)
+    raw_text = parse_file(file_path)
+
+    # Format with Gemini (structured JSON)
+    structured_resume = format_resume_with_gemini(raw_text)
+
+    # Create Resume object
     resume = Resume(
-        email=email,
-        resume_text=resume_text,
+        email=user["email"],
+        resume_text=structured_resume,
         file_id=file_id
     )
 
+    # Insert into MongoDB
     result = resumes_collection.insert_one(resume.dict())
 
     users_collection.update_one(
@@ -336,24 +383,82 @@ async def upload_resume(
         {"$push": {"resume": str(result.inserted_id)}}
     )
 
-    return {"msg": "Resume uploaded successfully"}
+    return {"msg": "Resume uploaded successfully", "resume_id": str(result.inserted_id)}
 
+# -----------------Job Scan -----------------------------
 @app.post("/jobscan")
 async def jobscan(
-    response : Response,
-    jobpost : JobModel,
+    response: Response,
+    jobpost: JobModel,
     access_token: str | None = Cookie(None)
 ):
-    if access_token :
-            payload = jwt.decode(access_token, SECRET_KEY, algorithms=[ALGORITHM])
-            email = payload["sub"]
+    if not access_token:
+        raise HTTPException(status_code=401, detail="Unauthorized")
 
-            if email:
-                user = users_collection.find_one({"email": email}, {"hashed_password": 0})
-            resume_list = user["resume"]
+    try:
+        payload = jwt.decode(access_token, SECRET_KEY, algorithms=[ALGORITHM])
+        email = payload["sub"]
+    except jwt.ExpiredSignatureError:
+        raise HTTPException(status_code=401, detail="Token expired")
+    except jwt.InvalidTokenError:
+        raise HTTPException(status_code=401, detail="Invalid token")
 
-            for resume in resume_list :
-                pass
-            #  make a string of all resume and send it to gemini , aspecting the finidng the which one is best suited and and how much is it score 
-            # in return we expact the few things 
-    pass
+    # Fetch user
+    user = users_collection.find_one({"email": email}, {"hashed_password": 0})
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    # Fetch all resumes for this user
+    resume_list = list(resumes_collection.find({"email": email}, {"_id": 0}))
+    if not resume_list:
+        raise HTTPException(status_code=404, detail="No resumes found")
+
+    # Compile resumes into text format for AI
+    compiled_resumes = []
+    for idx, resume in enumerate(resume_list, start=1):
+        compiled_resumes.append({
+            "resume_id": resume.get("resume_id", f"resume_{idx}"),
+            "tags": resume.get("tags", []),
+            "resume_text": resume.get("resume_text", "")
+        })
+
+    # Prompt Gemini to score all resumes
+    prompt = f"""
+    You are an AI resume evaluator.
+    Compare the following resumes against this job posting:
+
+    Job Posting:
+    {jobpost.json(indent=2)}
+
+    Resumes:
+    {compiled_resumes}
+
+    Task:
+    - For each resume, calculate a match percentage (0-100).
+    - Return a JSON list with resume_id and match_percentage for all resumes.
+    - Identify which resume has the highest score.
+    - For ONLY that highest-scoring resume:
+        * List missing skills or gaps.
+        * Suggest improvements.
+        * Provide an improved version of the resume in LaTeX format.
+
+    Output strictly in JSON:
+    {{
+      "scores": [
+        {{"resume_id": "...", "match_percentage": 75.0}},
+        {{"resume_id": "...", "match_percentage": 82.0}}
+      ],
+      "best_resume": {{
+        "resume_id": "...",
+        "match_percentage": 82.0,
+        "missing_skills": ["Docker", "React.js"],
+        "suggestions": ["Add project experience with APIs"],
+        "improved_resume_latex": "LaTeX formatted resume..."
+      }}
+    }}
+    """
+
+    ai_response = model.generate_content(prompt)
+    result_text = ai_response.text
+
+    return {"email": email, "jobscan_results": result_text}

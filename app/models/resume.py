@@ -6,3 +6,4 @@ class Resume(BaseModel):
     tags: List[str] = []
     resume_text: str | None
     file_id: str | None
+
