@@ -30,9 +30,8 @@ os.makedirs(UPLOAD_DIR, exist_ok=True)
 # Gemini Setup
 # =======================
 import google.generativeai as genai
-genai.configure(api_key="YOUR_GEMINI_API_KEY")
-model = genai.GenerativeModel("gemini-1.5-flash")
-
+genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
+model = genai.GenerativeModel("gemini-2.5-flash")
 # =======================
 # APP
 # =======================
@@ -318,6 +317,17 @@ def logout(response: Response):
 
 # ---------- UPLOAD RESUME ----------
 
+def extract_text_from_pdf(file_path: str) -> str:
+    text = ""
+    with fitz.open(file_path) as doc:
+        for page in doc:
+            text += page.get_text("text")
+    return text.strip()
+def extract_text_from_doc(file_path: str) -> str:
+    doc = Document(file_path)
+    text = "\n".join([para.text for para in doc.paragraphs])
+    return text.strip()
+
 def parse_file(file_path: str) -> str:
     if file_path.endswith(".pdf"):
         return extract_text_from_pdf(file_path)
@@ -326,12 +336,12 @@ def parse_file(file_path: str) -> str:
     else:
         raise ValueError("Unsupported file format")
 
+def format_resume_with_gemini(raw_text: str) -> dict:
+
     """
     Send raw resume text to Gemini and get structured JSON back.
     """
-    genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
-
-    model = genai.GenerativeModel("gemini-1.5-flash")
+ 
     prompt = f"""
     Convert the following resume text into a structured JSON format with fields:
     full_name, email, phone, location, linkedin, github, portfolio, summary,
@@ -357,20 +367,21 @@ async def upload_resume(
     file_id = str(uuid.uuid4())
     ext = os.path.splitext(file.filename)[-1].lower()
     file_path = f"{UPLOAD_DIR}/{file_id}{ext}"
-
+    print("Files Upload Successfull --------------------")
     # Save file locally
     with open(file_path, "wb") as f:
         f.write(await file.read())
-
+    print("Files Saved Successfull ---------------------")
     # Extract raw text (PDF/DOC parser)
     raw_text = parse_file(file_path)
-
+    print("PDF to text Successfull ---------------------")
     # Format with Gemini (structured JSON)
     structured_resume = format_resume_with_gemini(raw_text)
-
+    print("Gemini Enhanced the resume : Successfull ---------------------")
+    print(f"User : {user}")
     # Create Resume object
     resume = Resume(
-        email=user["email"],
+        email=user,
         resume_text=structured_resume,
         file_id=file_id
     )
@@ -379,9 +390,10 @@ async def upload_resume(
     result = resumes_collection.insert_one(resume.dict())
 
     users_collection.update_one(
-        {"email": email},
+        {"email": user},
         {"$push": {"resume": str(result.inserted_id)}}
     )
+    print("Iplpad to Mongo Db : Successfull ---------------------")
 
     return {"msg": "Resume uploaded successfully", "resume_id": str(result.inserted_id)}
 
