@@ -364,6 +364,9 @@ async def upload_resume(
     file: UploadFile = File(...),
     user: str = Depends(get_current_user)  # email comes from validated token
 ):
+    if resumes_collection.find_one({"email": user}):
+        raise HTTPException(status_code=400, detail="User already exists")
+
     file_id = str(uuid.uuid4())
     ext = os.path.splitext(file.filename)[-1].lower()
     file_path = f"{UPLOAD_DIR}/{file_id}{ext}"
@@ -396,7 +399,59 @@ async def upload_resume(
     print("Iplpad to Mongo Db : Successfull ---------------------")
 
     return {"msg": "Resume uploaded successfully", "resume_id": str(result.inserted_id)}
+# -----------------IPdate the resume --------------------
+import os
 
+@app.put("/update_resume") # Changed to PUT for updates
+async def update_resume(
+    file: UploadFile = File(...),
+    user: str = Depends(get_current_user)
+):
+    # 1. Check if the resume exists
+    existing_resume = resumes_collection.find_one({"email": user})
+    if not existing_resume:
+        raise HTTPException(status_code=404, detail="Resume not found. Use upload instead.")
+
+    # 2. Delete the old physical file to save space
+    old_file_id = existing_resume.get("file_id")
+    # You'll need to handle finding the extension if you don't store it, 
+    # or loop through your UPLOAD_DIR for that file_id.
+    for filename in os.listdir(UPLOAD_DIR):
+        if filename.startswith(old_file_id):
+            os.remove(os.path.join(UPLOAD_DIR, filename))
+
+    # 3. Process the new file
+    file_id = str(uuid.uuid4())
+    ext = os.path.splitext(file.filename)[-1].lower()
+    file_path = f"{UPLOAD_DIR}/{file_id}{ext}"
+    
+    with open(file_path, "wb") as f:
+        f.write(await file.read())
+
+    # 4. Extract and Enhance
+    raw_text = parse_file(file_path)
+    structured_resume = format_resume_with_gemini(raw_text)
+
+    # 5. Prepare the update data
+    updated_data = {
+        "resume_text": structured_resume,
+        "file_id": file_id,
+        "updated_at": datetime.utcnow() # Good practice to track updates
+    }
+
+    # 6. Update MongoDB (resumes_collection)
+    resumes_collection.update_one(
+        {"email": user},
+        {"$set": updated_data}
+    )
+
+    # Note: We don't need to push to users_collection if the ID 
+    # in the resumes_collection hasn't changed. 
+
+    return {
+        "msg": "Resume updated successfully", 
+        "resume_id": str(existing_resume["_id"])
+    }
 # -----------------Job Scan -----------------------------
 @app.post("/jobscan")
 async def jobscan(
