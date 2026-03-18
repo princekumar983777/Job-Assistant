@@ -1,291 +1,242 @@
-resume_temlate_1 = """
+resume_template = r"""
 %-------------------------
 % Resume in Latex
-% Author
+% Author : Harshibar
+% Based off of: https://github.com/jakeryang/resume
 % License : MIT
 %------------------------
 
-%---- Required Packages and Functions ----
+\documentclass[letterpaper,11pt]{article}
 
-\documentclass[a4paper,11pt]{article}
 \usepackage{latexsym}
-\usepackage{xcolor}
-\usepackage{float}
-\usepackage{ragged2e}
 \usepackage[empty]{fullpage}
-\usepackage{wrapfig}
-\usepackage{lipsum}
-\usepackage{tabularx}
 \usepackage{titlesec}
-\usepackage{geometry}
 \usepackage{marvosym}
+\usepackage[usenames,dvipsnames]{color}
 \usepackage{verbatim}
 \usepackage{enumitem}
 \usepackage[hidelinks]{hyperref}
 \usepackage{fancyhdr}
+\usepackage[english]{babel}
+\usepackage{tabularx}
+% only for pdflatex
+% \input{glyphtounicode}
+
+% fontawesome
 \usepackage{fontawesome5}
-\usepackage{multicol}
-\usepackage{graphicx}
-\usepackage{cfr-lm}
+
+% fixed width
+\usepackage[scale=0.90,lf]{FiraMono}
+
+% light-grey
+\definecolor{light-grey}{gray}{0.83}
+\definecolor{dark-grey}{gray}{0.3}
+\definecolor{text-grey}{gray}{.08}
+
+\DeclareRobustCommand{\ebseries}{\fontseries{eb}\selectfont}
+\DeclareTextFontCommand{\texteb}{\ebseries}
+
+% custom underilne
+\usepackage{contour}
+\usepackage[normalem]{ulem}
+\renewcommand{\ULdepth}{1.8pt}
+\contourlength{0.8pt}
+\newcommand{\myuline}[1]{%
+  \uline{\phantom{#1}}%
+  \llap{\contour{white}{#1}}%
+}
+
+
+% custom font: helvetica-style
+\usepackage{tgheros}
+\renewcommand*\familydefault{\sfdefault} 
+%% Only if the base font of the document is to be sans serif
 \usepackage[T1]{fontenc}
-\setlength{\multicolsep}{0pt} 
+
+
 \pagestyle{fancy}
 \fancyhf{} % clear all header and footer fields
 \fancyfoot{}
 \renewcommand{\headrulewidth}{0pt}
 \renewcommand{\footrulewidth}{0pt}
-\geometry{left=1.4cm, top=0.8cm, right=1.2cm, bottom=1cm}
+
 % Adjust margins
-%\addtolength{\oddsidemargin}{-0.5in}
-%\addtolength{\evensidemargin}{-0.5in}
-%\addtolength{\textwidth}{1in}
-\usepackage[most]{tcolorbox}
-\tcbset{
-	frame code={}
-	center title,
-	left=0pt,
-	right=0pt,
-	top=0pt,
-	bottom=0pt,
-	colback=gray!20,
-	colframe=white,
-	width=\dimexpr\textwidth\relax,
-	enlarge left by=-2mm,
-	boxsep=4pt,
-	arc=0pt,outer arc=0pt,
-}
+\addtolength{\oddsidemargin}{-0.5in}
+\addtolength{\evensidemargin}{0in}
+\addtolength{\textwidth}{1in}
+\addtolength{\topmargin}{-.5in}
+\addtolength{\textheight}{1.0in}
 
 \urlstyle{same}
 
+\raggedbottom
 \raggedright
 \setlength{\tabcolsep}{0in}
 
-% Sections formatting
-\titleformat{\section}{
-  \vspace{-4pt}\scshape\raggedright\large
-}{}{0em}{}[\color{black}\titlerule \vspace{-7pt}]
+% Sections formatting - serif
+% \titleformat{\section}{
+%   \vspace{2pt} \scshape \raggedright\large % header section
+% }{}{0em}{}[\color{black} \titlerule \vspace{-5pt}]
+
+% TODO EBSERIES
+% sans serif sections
+\titleformat {\section}{
+    \bfseries \vspace{2pt} \raggedright \large % header section
+}{}{0em}{}[\color{light-grey} {\titlerule[2pt]} \vspace{-4pt}]
+
+% only for pdflatex
+% Ensure that generate pdf is machine readable/ATS parsable
+% \pdfgentounicode=1
 
 %-------------------------
 % Custom commands
-\newcommand{\resumeItem}[2]{
-  \item{
-    \textbf{#1}{\hspace{0.5mm}#2 \vspace{-0.5mm}}
+\newcommand{\resumeItem}[1]{
+  \item\small{
+    {#1 \vspace{-1pt}}
   }
 }
 
-\newcommand{\resumePOR}[3]{
-\vspace{0.5mm}\item
-    \begin{tabular*}{0.97\textwidth}[t]{l@{\extracolsep{\fill}}r}
-        \textbf{#1}\hspace{0.3mm}#2 & \textit{\small{#3}} 
-    \end{tabular*}
-    \vspace{-2mm}
-}
-
 \newcommand{\resumeSubheading}[4]{
-\vspace{0.5mm}\item
-    \begin{tabular*}{0.98\textwidth}[t]{l@{\extracolsep{\fill}}r}
-        \textbf{#1} & \textit{\footnotesize{#4}} \\
-        \textit{\footnotesize{#3}} &  \footnotesize{#2}\\
-    \end{tabular*}
-    \vspace{-2.4mm}
+  \vspace{-1pt}\item
+    \begin{tabular*}{\textwidth}[t]{l@{\extracolsep{\fill}}r}
+      \textbf{#1} & {\color{dark-grey}\small #2}\vspace{1pt}\\ % top row of resume entry
+      \textit{#3} & {\color{dark-grey} \small #4}\\ % second row of resume entry
+    \end{tabular*}\vspace{-4pt}
 }
 
-\newcommand{\resumeProject}[4]{
-\vspace{0.5mm}\item
-    \begin{tabular*}{0.98\textwidth}[t]{l@{\extracolsep{\fill}}r}
-        \textbf{#1} & \textit{\footnotesize{#3}} \\
-        \footnotesize{\textit{#2}} & \footnotesize{#4}
-    \end{tabular*}
-    \vspace{-2.4mm}
+\newcommand{\resumeSubSubheading}[2]{
+    \item
+    \begin{tabular*}{\textwidth}{l@{\extracolsep{\fill}}r}
+      \textit{\small#1} & \textit{\small #2} \\
+    \end{tabular*}\vspace{-7pt}
 }
 
-\newcommand{\resumeSubItem}[2]{\resumeItem{#1}{#2}\vspace{-4pt}}
-
-% \renewcommand{\labelitemii}{$\circ$}
-\renewcommand{\labelitemi}{$\vcenter{\hbox{\tiny$\bullet$}}$}
-
-\newcommand{\resumeSubHeadingListStart}{\begin{itemize}[leftmargin=*,labelsep=0mm]}
-\newcommand{\resumeHeadingSkillStart}{\begin{itemize}[leftmargin=*,itemsep=1.7mm, rightmargin=2ex]}
-\newcommand{\resumeItemListStart}{\begin{justify}\begin{itemize}[leftmargin=3ex, rightmargin=2ex, noitemsep,labelsep=1.2mm,itemsep=0mm]\small}
-
-\newcommand{\resumeSubHeadingListEnd}{\end{itemize}\vspace{2mm}}
-\newcommand{\resumeHeadingSkillEnd}{\end{itemize}\vspace{-2mm}}
-\newcommand{\resumeItemListEnd}{\end{itemize}\end{justify}\vspace{-2mm}}
-\newcommand{\cvsection}[1]{%
-\vspace{2mm}
-\begin{tcolorbox}
-    \textbf{\large #1}
-\end{tcolorbox}
-    \vspace{-4mm}
+\newcommand{\resumeProjectHeading}[2]{
+    \item
+    \begin{tabular*}{\textwidth}{l@{\extracolsep{\fill}}r}
+      #1 & {\color{dark-grey}} \\
+    \end{tabular*}\vspace{-4pt}
 }
 
-\newcolumntype{L}{>{\raggedright\arraybackslash}X}%
-\newcolumntype{R}{>{\raggedleft\arraybackslash}X}%
-\newcolumntype{C}{>{\centering\arraybackslash}X}%
-%---- End of Packages and Functions ------
+\newcommand{\resumeSubItem}[1]{\resumeItem{#1}\vspace{-4pt}}
+
+\renewcommand\labelitemii{$\vcenter{\hbox{\tiny$\bullet$}}$}
+
+% CHANGED default leftmargin  0.15 in
+\newcommand{\resumeSubHeadingListStart}{\begin{itemize}[leftmargin=0in, label={}]}
+\newcommand{\resumeSubHeadingListEnd}{\end{itemize}}
+\newcommand{\resumeItemListStart}{\begin{itemize}}
+\newcommand{\resumeItemListEnd}{\end{itemize}\vspace{0pt}}
+
+\color{text-grey}
 
 %-------------------------------------------
-%%%%%%  CV STARTS HERE  %%%%%%%%%%%
-%%%%%% DEFINE ELEMENTS HERE %%%%%%%
-\newcommand{\name}{Your Name} % Your Name
-\newcommand{\course}{Your Program} % Your Program
-\newcommand{\roll}{xxxxxxx} % Your Roll No.
-\newcommand{\phone}{xxxxxxxxxx} % Your Phone Number
-\newcommand{\emaila}{youremail@email.com} %Email 1
-\newcommand{\emailb}{officialemail@iiitvadodara.ac.in} %Email 2
-
-
+%%%%%%  RESUME STARTS HERE  %%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 
 \begin{document}
-\fontfamily{cmr}\selectfont
-%----------HEADING-----------------
+
+%----------HEADING----------
+\begin{center}
+    \textbf{\Huge Harshibar} \\ \vspace{5pt}
+    \small \faPhone* \texttt{555.555.5555} \hspace{1pt} $|$
+    \hspace{1pt} \faEnvelope \hspace{2pt} \texttt{hello@email.com} \hspace{1pt} $|$ 
+    \hspace{1pt} \faYoutube \hspace{2pt} \texttt{harshibar} \hspace{1pt} $|$
+    \hspace{1pt} \faMapMarker* \hspace{2pt}\texttt{U.S. Citizen}
+    \\ \vspace{-3pt}
+\end{center}
+
+%-----------EXPERIENCE-----------
+\section{EXPERIENCE}
+  \resumeSubHeadingListStart
+
+    \resumeSubheading
+      {YouTube}{Aug. 2019 -- Present}
+      {Creator (\href{https://www.youtube.com/c/harshibar}{\myuline {@harshibar}})}{San Francisco, CA}
+      \resumeItemListStart
+        \resumeItem{Grew channel to \textbf{60k subscribers in 1.5 years}; created 80+ videos on tech and productivity}
+        \resumeItem{Conducted A/B testing on titles and thumbnails; \textbf{increased video impressions by 2.5M} in 3 months}
+         \resumeItem{Designed a Notion workflow to streamline video production and roadmapping; boosted productivity by 20\%}
+        \resumeItem{\textbf{Partnered with brands like Skillshare and Squarespace} to expand their outreach via sponsorships}
+        \resumeItem{\textbf{Highlights}:
+            \href{https://www.youtube.com/watch?v=HhWUjp5pD0g}{\myuline {The Problem with Productivity Apps}}, \href{https://www.youtube.com/watch?v=ms4cWMsOITs}{\myuline {Obsidian App Review}},
+            \href{https://www.youtube.com/watch?v=PkDbkyIR44w}{\myuline {Not-So-Minimal Desk Setup}}}
+      \resumeItemListEnd
+
+    \resumeSubheading
+      {Google Verily}{Aug. 2018 -- Sept. 2019}
+      {Software Engineer}{San Francisco, CA}
+      \resumeItemListStart
+        \resumeItem{\textbf{Led front-end development} of a dashboard to process 50k blood samples and detect early-stage cancer}
+        \resumeItem{Rebuilt a Quality Control product with input from 20 cross-functional stakeholders, \textbf{saving \$1M annually}}
+        \resumeItem{Spearheaded product development of a new lab workflow tool, leading to a 40\% increase in efficiency; \\ shadowed 10 core users, iterated on design docs, and implemented the solution with one engineer}
+
+    \resumeItemListEnd
+
+    \resumeSubheading
+      {Amazon}{May 2017 -- Aug. 2017}
+      {Software Engineering Intern}{Seattle, WA}
+      \resumeItemListStart
+        \resumeItem{Worked on the Search Customer Experience Team; \textbf{received a return offer} for a full-time position}
+        \resumeItem{\textbf{Shipped a new feature to 2M+ users} to improve the search experience for movie series-related queries}
+        \resumeItem{Built a back-end database service in Java and implemented a front-end UI to support future changes}
+      \resumeItemListEnd
+
+  \resumeSubHeadingListEnd
 
 
-\parbox{2.35cm}{%
-\includegraphics[width=2.3cm,clip]{iiitv.png}
-}
-\parbox{\dimexpr\linewidth-2.8cm\relax}{
-\begin{tabularx}{\linewidth}{L r} \\
-  \textbf{\Large \name} & {\raisebox{0.0\height}{\footnotesize \faPhone}\ +91-\phone}\\
-  {Roll No.: \roll} & \href{mailto:\emaila}{\raisebox{0.0\height}{\footnotesize \faEnvelope}\ {\emaila}} \\
-  \course &  \href{mailto:\emailb}{\raisebox{0.0\height}{\footnotesize \faEnvelope}\ {\emailb}}\\
-  {Your Course} &  \href{https://yourGithubProfile.com/}{\raisebox{0.0\height}{\footnotesize \faGithub}\ {GitHub Profile}} \\
-  {Indian Institute Of Information Technology, Vadodara} & \href{https://www.yourLinkedinProfile.com/in/}{\raisebox{0.0\height}{\footnotesize \faLinkedin}\ {LinkedIn Profile}}
-\end{tabularx}
-}
-% \parbox{3.0cm}{%
-% \flushright \includegraphics[width=2cm,clip]{nitp_logo.png}
-% }
+%-----------PROJECTS-----------
 
+\section{PROJECTS}
+    \resumeSubHeadingListStart
+      \resumeProjectHeading
+          {\textbf{Hyku Consulting}} {Sept. 2019 -- Mar. 2021}
+          \resumeItemListStart
+            \resumeItem{Mentored 15 students towards acceptance at top US boarding schools; achieved \textbf{100\% success rate}}
+            \resumeItem{Designed a \textbf{collaborative learning ecosystem} for students and parents with Trello, Miro, and Google Suite}
+          \resumeItemListEnd
+          
+        \resumeProjectHeading
+          {\textbf{Minimal Icon Pack}}{Sept. 2020 -- Nov. 2020}
+          \resumeItemListStart
+            \resumeItem{Designed and released 100+ minimal iOS and Android icons from scratch using Procreate and Figma}
+            \resumeItem{Marketed the product and design process on {\href{https://www.youtube.com/watch?v=Ju32r7QJCzk}{\myuline {YouTube}}}; accumulated over \textbf{\$250 in sales} on {\href{https://gumroad.com/l/icons-by-harshibar}{\myuline {Gumroad}}}}
+          \resumeItemListEnd
+          
+      \resumeProjectHeading
+         {\textbf{CommonIntern}}{Sept. 2019 -- May 2020}
+          \resumeItemListStart
+            \resumeItem{Built a Python script to automatically apply to jobs on Glassdoor using BeautifulSoup and Selenium}
+            \resumeItem{\textbf{500 stars on \href{https://github.com/harshibar/common-intern}{\myuline {GitHub}}}; featured on {\href{https://hackaday.com/2020/05/30/job-application-script-automates-the-boring-stuff-with-python}{\myuline {Hackaday}}}; made the front page of {\href {https://www.reddit.com/r/Python/comments/gpaegj/i_was_tired_of_opening_100s_of_tabs_for/?utm_source=share}{\myuline {r/python}}} and {\href {https://www.reddit.com/r/programming/comments/dcmbzx/i_was_tired_of_opening_100s_of_tabs_for/}{\myuline {r/programming}}}}
+          \resumeItemListEnd
+          
+    \resumeSubHeadingListEnd
 
 
 
 %-----------EDUCATION-----------
-\section{\textbf{Education}}
+\section {EDUCATION}
   \resumeSubHeadingListStart
     \resumeSubheading
-      {Indian Institute of Information Technology, Vadodara}{CGPA/Percentage: xxx}
-      {Your Degree and Course name}{Year}
-    \resumeSubheading
-      {Your School Name}{CGPA/Percentage: xxx}
-      {Board of Intermediate Education, State}{Year}
-    \resumeSubheading
-      {Your School name}{CGPA/Percentage: xxx}
-      {Board of Secondary Education, State}{Year}
+      {Wellesley College}{Aug. 2014 -- May 2018}
+      {Bachelor of Arts in Computer Science and Pre-Med}{Wellesley, MA}
+      	\resumeItemListStart
+    	\resumeItem {\textbf{Coursework}: Data Structures, Algorithms, Databases, Computer Systems, Machine Learning}
+        \resumeItem 
+            {\textbf{Research}: MIT Graybiel Lab (published author), MIT Media Lab (analyzed urban microbe spread)}
+        \resumeItemListEnd
   \resumeSubHeadingListEnd
-\vspace{-5.5mm}
+
+
 %
-
-
-
-%-----------EXPERIENCE-----------------
-\section{\textbf{Experience}}
-  \resumeSubHeadingListStart
-    \resumeSubheading
-      {Company Name}{City}
-      {Your Role}{Event dates}
-      \vspace{-2.0mm}
-      \resumeItemListStart
-    \item {Work description line 1}
-    \item {Work description line 2}
-    \resumeItemListEnd
-    
-    \vspace{-3.0mm}
-    
-    \resumeSubheading
-      {Company Name}{City}
-      {Your Role}{Event dates}
-      \vspace{-2.0mm}
-      \resumeItemListStart
-    \item {Work description line 1}
-    \item {Work description line 2}
-    \resumeItemListEnd
-      
-  \resumeSubHeadingListEnd
-\vspace{-8.5mm}
-
-
-
-%-----------PROJECTS-----------------
-\section{\textbf{Personal Projects}}
-\resumeSubHeadingListStart
-
-    \resumeProject
-      {Project Name} %Project Name
-      {Project description(Your input in the project)} %Project Name, Location Name
-      {Event dates} %Event Dates
-
-      \resumeItemListStart
-        \item {Tools \& technologies used: xxx,xxx}
-        \item {More description on the project(The output you achieved by working on the project)}
-    \resumeItemListEnd
-    \vspace{-2mm}
-    
-    \resumeProject
-      {Project Name} %Project Name
-      {Project description(Your input in the project)} %Project Name, Location Name
-      {Event dates} %Event Dates
-
-      \resumeItemListStart
-        \item {Tools \& technologies used: xxx,xxx}
-        \item {More description on the project(The output you achieved by working on the project)}
-    \resumeItemListEnd
-    \vspace{-2mm}
-    
-      
-  \resumeSubHeadingListEnd
-\vspace{-5.5mm}
-
-
-
-%-----------Technical skills-----------------
-\section{\textbf{Technical Skills and Interests}}
- \begin{itemize}[leftmargin=0.05in, label={}]
+%-----------PROGRAMMING SKILLS-----------
+\section{SKILLS}
+ \begin{itemize}[leftmargin=0in, label={}]
     \small{\item{
-     \textbf{Languages}{: } \\
-     \textbf{Developer Tools}{: } \\
-     \textbf{Frameworks}{: } \\
-     \textbf{Cloud/Databases}{: } \\
-     \textbf{Soft Skills}{: } \\
-     \textbf{Coursework}{: } \\
-     \textbf{Areas of Interest}{: } \\
+     \textbf{Languages} {: Python, JavaScript (React.js), HTML/CSS, SQL (PostgreSQL, MySQL)}\vspace{2pt} \\
+     \textbf{Tools}     {: Figma, Notion, Jira, Trello, Miro, Google Analytics, GitHub, DaVinci Resolve, OBS}
     }}
  \end{itemize}
- \vspace{-16pt}
-
-
-
-%-----------Positions of Responsibility-----------------
-\section{\textbf{Positions of Responsibility}}
-\vspace{-0.4mm}
-\resumeSubHeadingListStart
-\resumePOR{Position, } % Position
-    {Club or Event} %Club,Event
-    {Position tenure} %Tenure Period
-\resumePOR{Position, } % Position
-    {Club or Event} %Club,Event
-    {Position tenure} %Tenure Period
-\resumeSubHeadingListEnd
-\vspace{-5mm}
-
-
-
-
-%-----------Achievements-----------------
-\section{\textbf{Achievements}}
-\vspace{-0.4mm}
-\resumeSubHeadingListStart
-\resumePOR{Achievement } % Award
-    {description} % Event
-    {Event dates} %Event Year
-    
-\resumePOR{Achievement } % Award
-    {description} % Event
-    {Event dates} %Event Year
-\resumeSubHeadingListEnd
-\vspace{-5mm}
-\setlength{\footskip}{4.08003pt}
 
 
 %-------------------------------------------

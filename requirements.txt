@@ -1,8 +1,11 @@
 fastapi
 uvicorn
-jinja2
-josepython-jose
-pymongo
 pydantic[email]
-python-multipart
+pymongo
+bcrypt
 passlib[bcrypt]
+PyMuPDF
+google-generativeai
+python-jose[cryptography]
+python-dotenv
+python-multipart

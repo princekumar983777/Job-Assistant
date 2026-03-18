@@ -26,6 +26,9 @@ UPLOAD_DIR = "uploads"
 
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
+from dotenv import load_dotenv
+load_dotenv()
+
 # =======================
 # Gemini Setup
 # =======================
@@ -40,11 +43,24 @@ app = FastAPI()
 # =======================
 # DATABASE
 # =======================
-client = MongoClient("mongodb://localhost:27017/")
+
+
+mongodb_uri = os.getenv("MONGO_URI") or os.getenv("mongodb_uri")
+if not mongodb_uri:
+    raise RuntimeError(
+        "MongoDB URI missing. Set `MONGO_URI` (recommended) or `mongodb_uri` in your .env."
+    )
+
+client = MongoClient(mongodb_uri, serverSelectionTimeoutMS=5000)
 db = client["Lamina"]
 users_collection = db["users"]
 access_collection = db["access"]
 resumes_collection = db["resumes"]
+
+@app.on_event("startup")
+def _startup_db_ping() -> None:
+    # Fail fast with a clear error if Atlas is unreachable / creds invalid.
+    client.admin.command("ping")
 
 # =======================
 # PASSWORD HASHING
@@ -72,7 +88,7 @@ def verify_password(plain_password: str, hashed: str) -> bool:
 # =======================
 # MODELS
 # =======================
-from app.models.user import User , UserLogin
+from app.models.user import UserLogin
 # class UserLogin(BaseModel):
 #     email: EmailStr
 #     password: str
@@ -228,11 +244,19 @@ async def home(
 
     return response
 # ---------- SIGNUP ----------
+
+class User(BaseModel):
+    username: str
+    full_name: str
+    email: EmailStr
+    password: str
+
 @app.post("/signup")
 def signup(user: User, response: Response):
+    print("Signup request received : ------------")
     if users_collection.find_one({"email": user.email}):
         raise HTTPException(status_code=400, detail="User already exists")
-
+    print("User try to search the user in the database : ------------")
     user_doc = {
         "username": user.username,
         "full_name": user.full_name,
